@@ -2,6 +2,7 @@ import requests
 import time
 from enum import Enum
 from datetime import datetime
+from typing import  Any
 
 INFO_URL = "https://raw.githubusercontent.com/ccev/pogoinfo/v2/"
 PROTO_URL = "https://raw.githubusercontent.com/Furtif/POGOProtos/master/base/base.proto"
@@ -41,7 +42,7 @@ def gen_uicon(**args):
     return icon + ".png"
 
 
-def match_enum(enum, value):
+def match_enum(enum: Enum, value: Any) -> Enum:
     try:
         type_ = enum[value.upper()]
     except Exception as e:

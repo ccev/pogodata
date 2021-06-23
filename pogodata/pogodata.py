@@ -13,7 +13,7 @@ from .type import _make_type_list, Type
 #from .grunt import _make_grunt_list, Grunt
 #from .raid import _make_raid_list
 from .move import _make_move_list, Move
-#from .weather import _make_weather_list, Weather
+from .weather import _make_weather_list, Weather
 #from .quest import _make_quest_list, Quest
 from .icons import IconManager
 from .language import LanguageManager
@@ -22,6 +22,7 @@ from .custom_types import DefaultEnum
 
 class PogoData:
     types: List[Type] = []
+    weather: List[Weather] = []
     moves: List[Move] = []
     mons: List[Pokemon] = []
 
@@ -50,7 +51,7 @@ class PogoData:
 
         _make_type_list(self)
         #_make_item_list(self)
-        #_make_weather_list(self)
+        _make_weather_list(self)
         _make_move_list(self)
         _make_mon_list(self)
         #_make_quest_list(self)
@@ -76,13 +77,17 @@ class PogoData:
         result = self.__get_object(self.types, **kwargs)
         return result
 
+    def get_weather(self, **kwargs) -> List[Weather]:
+        result = self.__get_object(self.weather, **kwargs)
+        return result
+
     def get_moves(self, **kwargs) -> List[Move]:
         result = self.__get_object(self.moves, **kwargs)
         return result
 
     # TODO all get_xxx methods
 
-    def get_enum(self, enum: str, message: Optional[str] = None) -> Enum:
+    def get_enum(self, enum: str, message: Optional[str] = None, remove: Optional[str] = None) -> Enum:
         cache_key = str(message).lower() + ":" + enum.lower()
         cached = self.__cached_enums.get(cache_key)
         if cached:
@@ -107,8 +112,10 @@ class PogoData:
             final = {}
             proto = proto.split("{\n")[1].split("\n}")[0]
             for entry in proto.split("\n"):
-                k = entry.split(" =")[0]
-                v = int(entry.split("= ")[1].split(";")[0])
+                k: str = entry.split(" =")[0]
+                v: int = int(entry.split("= ")[1].split(";")[0])
+                if remove:
+                    k = k.replace(remove, "")
                 final[k] = v
 
             final = Enum(enum, final)

@@ -16,7 +16,7 @@ class Move(GameObject):
         self.names: Dict[str, str] = {}
         self.type: Type = Type(self.icon_manager, DefaultEnum(0))
 
-        self.pve = {
+        self.pve = { # TODO move stuff
             "power": 0,
             "energy_gain": 0,
             "duration": 0,
@@ -27,7 +27,7 @@ class Move(GameObject):
         }
         self.pvp = {
             "power": 0,
-            "energy_gain": int
+            "energy_gain": 0
         }
 
         self.query = {

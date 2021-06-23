@@ -52,14 +52,21 @@ class GameObject(BaseGameObject):
     def __repr__(self):
         return f"<{type(self).__name__} {self.proto.id}:{self.proto.tmpl}>"
 
-    def get_name(self, language: Union[str, Language]) -> str:
+    def get_name(self, language: Union[str, Language, None]) -> str:
         try:
+            if not language:
+                language = Language.ENGLISH
             language = match_enum(Language, language)
         except ValueError:
             raise UnknownLanguage(language)
-        return self.names.get(language, self.names[Language.ENGLISH.value])
+        return self.names.get(language.value, self.names[Language.ENGLISH.value])
 
     def compare(self, **kwargs) -> bool:
+        if "id" in kwargs:
+            if int(kwargs["id"]) == self.id:
+                return True
+            return False
+
         for key, value in kwargs.items():
             to_compare = self.query.get(key)
 

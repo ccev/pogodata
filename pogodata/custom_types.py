@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Union
+from typing import Union, Any
 
 from .errors import InvalidQueryArgument, NoORANDMixingInQList
 
@@ -72,7 +72,7 @@ class QueryType:
         QueryType.__qint_or_qfloat(original, to_match, float)
 
     @staticmethod
-    def qlist(original: str, to_match: list):
+    def qlist(original: Any, to_match: list):
         if original.startswith(":"):
             match_complete = True
             original = original[1:].replace("|", ",")
@@ -83,6 +83,14 @@ class QueryType:
             raise NoORANDMixingInQList(original)
 
         elif "," in original:
-            pass
-        return
-        # TODO qlist
+            original_list = set(original.split(","))
+            if len([o for o in original_list if o in to_match]) >= len(original_list):
+                return True
+
+        elif "|" in original:
+            original_list = original.split("|")
+            if set(original_list) & set(to_match):
+                return True
+
+        else:
+            return bool(original in to_match)

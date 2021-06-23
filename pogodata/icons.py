@@ -1,8 +1,10 @@
 import re
 from enum import Enum
-from typing import Tuple, Dict, Union
+from typing import Tuple, Dict, Union, List
 
 from .misc import match_enum, get_repo_content
+from .weather import Weather
+from .pokemon import Pokemon
 
 
 class IconSet(Enum):
@@ -73,15 +75,14 @@ class IconSetManager:
         self.url = self.details["url"]
         self.type = self.details["type"]
 
-        if self.type == IconType.PMSF:
-            match = re.match(r"https:\/\/raw\.githubusercontent\.com\/([^\/]*)\/([^\/]*)\/([^\/]*).*", self.url)
-            user, repo, branch = match.groups()
+        match = re.match(r"https:\/\/raw\.githubusercontent\.com\/([^\/]*)\/([^\/]*)\/([^\/]*).*", self.url)
+        user, repo, branch = match.groups()
 
-            base_api = f"https://api.github.com/repos/{user}/{repo}/"
-            sha_url = base_api + f"branches/{branch}"
-            files_url = base_api + "git/trees/{sha}?recursive=true"
-            icons = get_repo_content(files_url, sha_url)
-            self.icons = [re.sub(r"[^\/]*\/", "", i) for i in icons]
+        base_api = f"https://api.github.com/repos/{user}/{repo}/"
+        sha_url = base_api + f"branches/{branch}"
+        files_url = base_api + "git/trees/{sha}?recursive=true"
+        icons = get_repo_content(files_url, sha_url)
+        self.icons = [re.sub(r"[^\/]*\/", "", i) for i in icons]
 
 
 class IconManager:
@@ -97,13 +98,22 @@ class IconManager:
         return self.iconsets[iconset]
 
     def pokemon(self,
-                mon,
+                mon: Pokemon,
                 gender: int = 0,
-                iconset: Union[str, int, IconSet] = IconSet.POGO) -> Tuple[str, str]:
+                iconset: Union[str, int, IconSet] = IconSet.POGO) -> List[Tuple[str, str, bool]]:
+        """
+        Returns a list containg tuples: (icon name, icon url, is_shiny?)
+        """
         iconset = self.get_iconset(iconset)
+        result = []
 
         if iconset.type == IconType.POKEMINERS:
-            return mon.assets[gender], iconset.url + "Images/Pokemon/" + mon.assets[gender] + ".png"
+            for shiny in ["", "_shiny"]:
+                asset = mon.assets[gender] + shiny
+                if asset + ".png" in iconset.icons:
+                    result.append((asset, iconset.url + "Images/Pokemon/{}.png".format(asset), bool(shiny)))
+                print(result)
+            return result
         elif iconset.type == IconType.PMSF:
             for monid in (mon.proto.id, 0):
                 for form in (mon.form.id, 0):
@@ -117,12 +127,12 @@ class IconManager:
                             costr = "_" + str(costm)
                         else:
                             costr = ""
-    
+
                         icon = "pokemon_icon_" + str(monid).zfill(3) + formstr + costr
                         if icon in iconset.icons:
-                            return icon, iconset.url + icon + ".png"
+                            return [(icon, iconset.url + icon + ".png", False)]
             default = "pokemon_icon_000_00"
-            return default, iconset.url + default + ".png"
+            return [(default, iconset.url + default + ".png", False)]
     
     def item(self, item, amount=1):
         if self.type == IconType.POKEMINERS:
@@ -139,20 +149,22 @@ class IconManager:
                 "url": iconset.url + "Images/Types/" + montype.type.tmpl + ".png"
             }
     
-    def weather(self, weather, is_day=True):
-        if self.type == IconType.POKEMINERS:
-            westr = weather.template.lower()
-            if weather.id == 1 and is_day:
+    def weather(self, weather: Weather, iconset: Union[str, int, IconSet] = IconSet.POGO):
+        iconset = self.get_iconset(iconset)
+
+        if iconset.type == IconType.POKEMINERS:
+            westr = weather.proto.tmpl.lower()
+            if weather.proto.id == 1 and is_day:
                 westr = "sunny"
-            elif weather.id == 2:
+            elif weather.proto.id == 2:
                 westr = "rain"
-            elif weather.id == 3:
+            elif weather.proto.id == 3:
                 westr = "partlycloudy_"
                 if is_day:
                     westr += "day"
                 else:
                     westr += "night"
-            elif weather.id == 4:
+            elif weather.proto.id == 4:
                 westr = "cloudy"
             
             return self.url + f"Images/Weather/weatherIcon_small_{westr}.png"
