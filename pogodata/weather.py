@@ -50,7 +50,7 @@ def _make_weather_list(pogodata):
         weather.names = pogodata.language_manager.get_all("weather_" + proto.name)
 
         for boost_type in entry["pokemonType"]:
-            type_ = pogodata.get_type(type=boost_type)
+            type_ = pogodata.get_types(type=boost_type)[0]
             weather.boosts.append(type_)
 
         weather.make_query()

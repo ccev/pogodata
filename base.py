@@ -1,12 +1,16 @@
 from pogodata import PogoData
-import ast
 import json
 
-data = PogoData()
+from flask import Flask, request, jsonify
 
-while True:
-    query = input("Mon Query: ")
-    query = ast.literal_eval(query)
-    mons = data.get_mons(**query)
-    print(json.dumps([m.get_full(language=query.get("language"), iconset=query.get("iconset")) for m in mons], indent=4, ensure_ascii=False))
-    #print([m.get_full() for m in mons])
+data = PogoData()
+app = Flask(__name__)
+
+
+@app.route('/v1/pokemon', methods=['GET', 'POST'])
+def templating():
+    mons = data.get_mons(**request.args)
+    return (json.dumps([m.get_full(language=request.args.get("language"), iconset=request.args.get("iconset")) for m in mons], indent=4, ensure_ascii=False))
+
+
+app.run(port=4442)

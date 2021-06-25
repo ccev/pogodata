@@ -13,7 +13,7 @@ from .move import Move
 from .type import Type
 
 
-GENERATION_MAXES = [151, 251, 386, 493, 649, 721, 809, 898]
+GENERATION_MAXES = [0, 151, 251, 386, 493, 649, 721, 809, 898]
 
 
 class Generation(Enum):
@@ -49,15 +49,7 @@ class Pokemon(GameObject):
         self.temp_evolution: CustomEnum = CustomEnum.default()
         self.rarity: CustomEnum = CustomEnum.default()
 
-        gen: Generation = Generation.UNSET
-        if self.proto.id > GENERATION_MAXES[-1]:
-            gen = Generation.UNSET
-        else:
-            for gen_max in GENERATION_MAXES:
-                if self.proto.id > gen_max:
-                    gen = Generation(gen_max)
-                    break
-        self.generation: CustomEnum = CustomEnum(gen)
+        self.generation: CustomEnum = CustomEnum(Generation.UNSET)
 
         self.moves: List[Move] = []
         self.elite_moves: List[Move] = []
@@ -134,6 +126,16 @@ class Pokemon(GameObject):
             return str(part.id)
         else:
             return ""
+
+    def make_gen(self):
+        gen: Generation = Generation.UNSET
+        if self.proto.id > GENERATION_MAXES[-1]:
+            gen = Generation.UNSET
+        else:
+            for gen_id, gen_max in enumerate(GENERATION_MAXES, start=1):
+                if self.proto.id > gen_max:
+                    gen = Generation(gen_id)
+        self.generation = CustomEnum(gen)
 
     def make_internal_id(self):
         if self.proto.id == 0:
@@ -332,8 +334,9 @@ def _make_mon_list(pogodata):
         mon.form = CustomEnum(match_enum(forms, entry.get("form", 0)))
         mon.costume = CustomEnum(costumes(0))
         mon.temp_evolution = CustomEnum(megas(0))
-        raw_rarity = entry.get("rarity", 0).strip("POKEMON_RARITY")
+        raw_rarity = entry.get("rarity", "NORMAL").strip("POKEMON_RARITY_")
         mon.rarity = CustomEnum(match_enum(rarities, raw_rarity))
+        mon.make_gen()
 
         gender_settings = gender_ratios.get(templateid, {})
         mon.male_ratio = gender_settings.get("malePercent")

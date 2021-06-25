@@ -44,7 +44,7 @@ class LanguageManager:
         self.languages: Dict[str, Dict[str, str]] = {}
         for lang in Language:
             self.languages[lang.value] = self.download_locale(lang)
-            break #TODO remove after testing
+            #break #TODO remove after testing
 
     @staticmethod
     def download_locale(language: Language):
@@ -71,5 +71,5 @@ class LanguageManager:
         result = dict()
         for lang in Language:
             result[lang.value] = (self.get(key, language=lang))
-            break #TODO remove after testing
+            #break #TODO remove after testing
         return result

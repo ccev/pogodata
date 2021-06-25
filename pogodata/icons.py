@@ -3,8 +3,6 @@ from enum import Enum
 from typing import Tuple, Dict, Union, List
 
 from .misc import match_enum, get_repo_content
-from .weather import Weather
-from .pokemon import Pokemon
 
 
 class IconSet(Enum):
@@ -91,14 +89,14 @@ class IconManager:
         for iconset in IconSet:
             print(f"IconManager: Preparing iconset {iconset.name}")
             self.iconsets[iconset] = IconSetManager(iconset)
-            break # TODO remove after testing
+            #break # TODO remove after testing
 
     def get_iconset(self, iconset: Union[str, int, IconSet] = IconSet.POGO):
         iconset = match_enum(IconSet, iconset)
         return self.iconsets[iconset]
 
     def pokemon(self,
-                mon: Pokemon,
+                mon,
                 gender: int = 0,
                 iconset: Union[str, int, IconSet] = IconSet.POGO) -> List[Tuple[str, str, bool]]:
         """
@@ -112,7 +110,6 @@ class IconManager:
                 asset = mon.assets[gender] + shiny
                 if asset + ".png" in iconset.icons:
                     result.append((asset, iconset.url + "Images/Pokemon/{}.png".format(asset), bool(shiny)))
-                print(result)
             return result
         elif iconset.type == IconType.PMSF:
             for monid in (mon.proto.id, 0):
@@ -129,7 +126,7 @@ class IconManager:
                             costr = ""
 
                         icon = "pokemon_icon_" + str(monid).zfill(3) + formstr + costr
-                        if icon in iconset.icons:
+                        if icon + ".png" in iconset.icons:
                             return [(icon, iconset.url + icon + ".png", False)]
             default = "pokemon_icon_000_00"
             return [(default, iconset.url + default + ".png", False)]
@@ -149,7 +146,7 @@ class IconManager:
                 "url": iconset.url + "Images/Types/" + montype.type.tmpl + ".png"
             }
     
-    def weather(self, weather: Weather, iconset: Union[str, int, IconSet] = IconSet.POGO):
+    def weather(self, weather, iconset: Union[str, int, IconSet] = IconSet.POGO):
         iconset = self.get_iconset(iconset)
 
         if iconset.type == IconType.POKEMINERS:
