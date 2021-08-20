@@ -8,7 +8,6 @@ from .type import Type
 from .language import Language
 
 
-
 class Weather(GameObject):
     def __init__(self, icon_manager: IconManager, proto: Enum):
         super().__init__(icon_manager)

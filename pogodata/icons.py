@@ -24,7 +24,6 @@ class IconType(Enum):
     PMSF = 0
     UICONS = 1
     POKEMINERS = 2
-    ADDRESSABLE = 3
 
 
 ICON_DETAILS = {
@@ -112,8 +111,6 @@ class IconManager:
                 if asset + ".png" in iconset.icons:
                     result.append((asset, iconset.url + "Images/Pokemon/{}.png".format(asset), bool(shiny)))
             return result
-        elif iconset.type == IconType.ADDRESSABLE:
-            pass
         elif iconset.type == IconType.PMSF:
             for monid in (mon.proto.id, 0):
                 for form in (mon.form.id, 0):
@@ -153,21 +150,35 @@ class IconManager:
         iconset = self.get_iconset(iconset)
 
         if iconset.type == IconType.POKEMINERS:
-            westr = weather.proto.tmpl.lower()
-            if weather.proto.id == 1 and is_day:
-                westr = "sunny"
-            elif weather.proto.id == 2:
-                westr = "rain"
-            elif weather.proto.id == 3:
-                westr = "partlycloudy_"
-                if is_day:
-                    westr += "day"
-                else:
-                    westr += "night"
-            elif weather.proto.id == 4:
-                westr = "cloudy"
-            
-            return self.url + f"Images/Weather/weatherIcon_small_{westr}.png"
+            icons = []
+
+            for is_day in [True, False]:
+                westr = weather.proto.tmpl.lower()
+                if weather.proto.id == 1 and is_day:
+                    westr = "sunny"
+                elif weather.proto.id == 2:
+                    westr = "rain"
+                elif weather.proto.id == 3:
+                    westr = "partlycloudy_"
+                    if is_day:
+                        westr += "day"
+                    else:
+                        westr += "night"
+                elif weather.proto.id == 4:
+                    westr = "cloudy"
+
+                if weather.proto.id not in [1, 3]:
+                    is_day = None
+
+                name = f"weatherIcon_small_{westr}"
+
+                icon = {
+                    "name": name,
+                    "url": iconset.url + f"Images/Weather/{name}.png",
+                    "day": is_day
+                }
+                icons.append(icon)
+            return icons
 
     def grunt(self, grunt):
         if self.type == IconType.PMSF:

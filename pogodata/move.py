@@ -1,7 +1,7 @@
 from typing import Dict, Any, Union
 
 from .custom_types import DefaultEnum, CustomEnum, QueryType
-from .icons import IconManager
+from .icons import IconManager, IconSet
 from .gameobject import GameObject
 from .language import Language
 from .type import Type
@@ -48,7 +48,9 @@ class Move(GameObject):
             "type": self.type.get_base()
         }
 
-    def get_full(self, language: Union[str, Language] = Language.ENGLISH) -> Dict[str, Any]:
+    def get_full(self,
+                 language: Union[str, Language] = Language.ENGLISH,
+                 iconset: Union[str, int, IconSet] = IconSet.POGO) -> Dict[str, Any]:
         base = self.get_base()
         base.update({
             "name": self.get_name(language),
