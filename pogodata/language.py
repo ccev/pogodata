@@ -3,13 +3,13 @@ import re
 from enum import Enum
 from typing import Dict, Union, Optional
 
-from .misc import httpget, match_enum
+from .misc import httpget, EnumMatcher
 
 LOCALE_URL = "https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Texts/Latest%20APK/{}.txt"
 REMOTE_LOCALE_URL = "https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Texts/Latest%20Remote/{}.txt"
 
 
-class Language(Enum):
+class Language(EnumMatcher):
     ENGLISH = "English"
     BRAZILIANPORTUGUESE = "BrazilianPortuguese"
     CHINESETRADITIONAL = "ChineseTraditional"
@@ -62,10 +62,10 @@ class LanguageManager:
 
     def get(self, key: str, language: Union[Language, str] = Language.ENGLISH) -> Optional[str]:
         try:
-            language = match_enum(Language, language)
+            language = Language.match(language)
         except ValueError:
             language = Language.ENGLISH
-        return self.languages[language.value].get(key)
+        return self.languages[language.value].get(key.lower(), "")
 
     def get_all(self, key: str) -> Dict[str, Optional[str]]:
         result = dict()

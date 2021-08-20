@@ -2,7 +2,6 @@ from copy import deepcopy
 from enum import Enum
 from typing import Dict, Tuple, Callable, Any, Optional, Union
 
-from .misc import match_enum
 from .icons import IconManager
 from .errors import UnknownLanguage
 from .language import Language
@@ -52,14 +51,17 @@ class GameObject(BaseGameObject):
     def __repr__(self):
         return f"<{type(self).__name__} {self.proto.id}:{self.proto.tmpl}>"
 
-    def get_name(self, language: Union[str, Language, None]) -> str:
+    def get_name(self, language: Union[str, Language, None], var: Optional[dict] = None) -> str:
         try:
             if not language:
                 language = Language.ENGLISH
-            language = match_enum(Language, language)
+            language = Language.match(language)
         except ValueError:
             raise UnknownLanguage(language)
-        return self.names.get(language.value, self.names[Language.ENGLISH.value])
+
+        if not var:
+            var = self.names
+        return var.get(str(language.value), var[Language.ENGLISH.value])
 
     def compare(self, **kwargs) -> bool:
         if "id" in kwargs:

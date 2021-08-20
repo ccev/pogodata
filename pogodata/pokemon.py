@@ -4,7 +4,7 @@ from enum import Enum
 from math import floor
 from typing import List, Dict, Any, Union
 
-from .misc import CP_MULTIPLIERS, match_enum, get_repo_content, INGAME_ICONS, ICON_SHA
+from .misc import CP_MULTIPLIERS, get_repo_content, INGAME_ICONS, ICON_SHA
 from .custom_types import CustomEnum, QueryType
 from .icons import IconSet, IconManager
 from .gameobject import GameObject, BaseGameObject
@@ -41,6 +41,7 @@ class Pokemon(GameObject):
         super().__init__(icon_manager, gamemaster_entry)
 
         self.names: Dict[str, str] = {}
+        self.form_names: Dict[str, str] = {}
         self.shiny: int = 0  # TODO shiny
         self.pokemon_type: PokemonType = PokemonType.BASE
         self.proto: CustomEnum = CustomEnum.default()
@@ -69,14 +70,14 @@ class Pokemon(GameObject):
         self._asset_value: str = ""
         self.assets: List[str] = []
 
-        self.id: int = 0
+        self.id: str = "0"
         self.make_internal_id()
         self.make_info()
         self.make_stats()
         self.make_query()
 
     def __repr__(self):
-        return f"<Pokemon {self.id}:{self.proto.tmpl}:{self.form.tmpl}:{self.temp_evolution.tmpl}:{self.costume.tmpl}>"
+        return f"<Pokemon {self.id} {self.proto.tmpl}:{self.form.tmpl}:{self.temp_evolution.tmpl}:{self.costume.tmpl}>"
 
     def get_base(self) -> Dict[str, Any]:
         return {
@@ -109,6 +110,7 @@ class Pokemon(GameObject):
 
         base.update({
             "name": self.get_name(language),
+            "form_name": self.get_name(language, var=self.form_names),
             "moves": [m.get_base() for m in self.moves],
             "elite_moves": [m.get_base() for m in self.elite_moves],
             "types": [t.get_base() for t in self.types],
@@ -121,11 +123,11 @@ class Pokemon(GameObject):
         return base
 
     @staticmethod
-    def id_part(part: CustomEnum):
+    def __id_part(part: CustomEnum):
         if part.id > 0:
-            return str(part.id)
+            return ":" + str(part.id)
         else:
-            return ""
+            return "0"
 
     def make_gen(self):
         gen: Generation = Generation.UNSET
@@ -139,10 +141,10 @@ class Pokemon(GameObject):
 
     def make_internal_id(self):
         if self.proto.id == 0:
-            self.id = 0
+            self.id = "0"
         else:
-            self.id = int(self.id_part(self.proto) + self.id_part(self.form) + self.id_part(self.costume)
-                          + self.id_part(self.temp_evolution))
+            self.id = str(self.proto.id) + self.__id_part(self.form) + self.__id_part(self.costume) \
+                      + self.__id_part(self.temp_evolution)
 
     def calculate_cp(self, level, ivs):
         multiplier = CP_MULTIPLIERS.get(level, 0.5)
@@ -158,7 +160,7 @@ class Pokemon(GameObject):
         else:
             asset += str(self.proto.id).zfill(3) + "_"
             if self._asset_value:
-                asset += self._asset_value
+                asset += str(self._asset_value)
             else:
                 asset += "0" + str(gender)
                 if self.costume:
@@ -181,7 +183,7 @@ class Pokemon(GameObject):
     def make_info(self):
         raw_encounter: dict = self.raw.get("encounter", {})
 
-        self.info["rarity"]: str = self.rarity.tmpl.lower()
+        self.info["rarity"]: str = vars(self.rarity)
 
         self.info["bonus_stardust"]: int = raw_encounter.get("bonusStardustCaptureReward", 0)
         self.info["bonus_candy"]: int = raw_encounter.get("bonusCandyCaptureReward", 0)
@@ -207,8 +209,8 @@ class Pokemon(GameObject):
         third_move["stardust"]: int = raw_third_move.get("candyToUnlock", 0)
 
         encounter = self.info["encounter"] = dict()
-        encounter["base_capture_rate"]: float = encounter.get("baseCaptureRate", 0)
-        encounter["flee_rate"]: float = encounter.get("baseFleeRate", 0)
+        encounter["base_capture_rate"]: float = raw_encounter.get("baseCaptureRate", 0)
+        encounter["flee_rate"]: float = raw_encounter.get("baseFleeRate", 0)
 
         attack = encounter["attack"] = dict()
         attack["duration"]: float = raw_encounter.get("attackTimerS", 0)
@@ -221,9 +223,10 @@ class Pokemon(GameObject):
 
     def make_query(self):
         self.query = {
-            "id": (QueryType.int_, self.id),
+            "id": (QueryType.string, self.id),
             "pokemon": (QueryType.customenum, self.proto),
             "name": (QueryType.qlist, self.names),
+            "form_name": (QueryType.qlist, self.form_names),
             "shiny": (QueryType.qint, self.shiny),
             "generation": (QueryType.customenum, self.generation),
             "form": (QueryType.customenum, self.form),
@@ -312,7 +315,7 @@ def _make_mon_list(pogodata):
     megas = pogodata.get_enum("HoloTemporaryEvolutionId")
     mon_ids = pogodata.get_enum("HoloPokemonId")
     costumes = pogodata.get_enum("Costume")
-    rarities = pogodata.get_enum("HoloPokemonClass", remove="POKEMON_CLASS_")
+    rarities = pogodata.get_enum("HoloPokemonClass")
 
     # Getting spawn ratios
     print("Getting female/male ratios")
@@ -330,12 +333,12 @@ def _make_mon_list(pogodata):
             continue
 
         mon = Pokemon(pogodata.icon_manager, entry)
-        mon.proto = CustomEnum(match_enum(mon_ids, entry.get("pokemonId", 0)))
-        mon.form = CustomEnum(match_enum(forms, entry.get("form", 0)))
+        mon.proto = CustomEnum(mon_ids.match(entry.get("pokemonId", 0)))
+        mon.form = CustomEnum(forms.match(entry.get("form", 0)))
         mon.costume = CustomEnum(costumes(0))
         mon.temp_evolution = CustomEnum(megas(0))
-        raw_rarity = entry.get("rarity", "NORMAL").strip("POKEMON_RARITY_")
-        mon.rarity = CustomEnum(match_enum(rarities, raw_rarity))
+        raw_rarity = entry.get("rarity", "POKEMON_CLASS_NORMAL").replace("RARITY", "CLASS")
+        mon.rarity = CustomEnum(rarities.match(raw_rarity))
         mon.make_gen()
 
         gender_settings = gender_ratios.get(templateid, {})
@@ -343,7 +346,9 @@ def _make_mon_list(pogodata):
         mon.female_ratio = gender_settings.get("femalePercent")
 
         locale_key = "pokemon_name_" + str(mon.proto.id).zfill(4)
+        form_locale_key = "form_" + str(mon.form.tmpl).lower()
         mon.names = pogodata.language_manager.get_all(locale_key)
+        mon.form_names = pogodata.language_manager.get_all(form_locale_key)
 
         mon.moves += [pogodata.get_moves(move=t)[0] for t in mon.raw.get("quickMoves", [])]
         mon.moves += [pogodata.get_moves(move=t)[0] for t in mon.raw.get("cinematicMoves", [])]
@@ -365,7 +370,7 @@ def _make_mon_list(pogodata):
             evo.pokemon_type = PokemonType.TEMP_EVOLUTION
 
             temp_evolution_template = temp_evo.get("tempEvoId")
-            evo.temp_evolution = CustomEnum(match_enum(megas, temp_evolution_template))
+            evo.temp_evolution = CustomEnum(megas.match(temp_evolution_template))
 
             evo.raw = temp_evo
             evo.names = pogodata.language_manager.get_all(locale_key + "_" + str(evo.temp_evolution.id).zfill(4))
@@ -403,7 +408,7 @@ def _make_mon_list(pogodata):
                 mon = pogodata.get_mons(pokemon=formsettings["pokemon"])[0]
                 mon = mon.copy()
                 mon.pokemon_type = PokemonType.FORM
-                mon.form = CustomEnum(match_enum(forms, form.get("form", 0)))
+                mon.form = CustomEnum(forms.match(form.get("form", 0)))
                 mon.make_query()
                 pogodata.mons.append(mon)
             else:
@@ -412,8 +417,8 @@ def _make_mon_list(pogodata):
             asset_value = form.get("assetBundleValue")
             asset_suffix = form.get("assetBundleSuffix")
             if asset_value or asset_suffix:
-                mon.asset_value = asset_value
-                mon.asset_suffix = asset_suffix
+                mon._asset_value = asset_value
+                mon._asset_suffix = asset_suffix
 
             mon.make_assets()
             mon.make_info()

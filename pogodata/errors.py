@@ -1,5 +1,6 @@
 from .language import Language
 
+
 class PogoDataException(Exception):
     """Base exception for PogoData Errors.
     """
@@ -24,6 +25,6 @@ class NoORANDMixingInQList(QueryException):
 
 class UnknownLanguage(QueryException):
     def __init__(self, language):
-        langs = ", ".join([l.name.lower() for l in Language])
+        langs = ", ".join([l_.name.lower() for l_ in Language])
         message = f"Unknown language `{language}`. Please use one of the following: {langs}"
         super().__init__(message)

@@ -2,10 +2,10 @@ import re
 from enum import Enum
 from typing import Tuple, Dict, Union, List
 
-from .misc import match_enum, get_repo_content
+from .misc import get_repo_content, EnumMatcher
 
 
-class IconSet(Enum):
+class IconSet(EnumMatcher):
     POGO = 0
     POGO_OPTIMIZED = 1
     POGO_OUTLINE = 2
@@ -14,7 +14,7 @@ class IconSet(Enum):
     HOME = 20
     HOME_OUTLINE = 21
     SHUFFLE = 30
-    SUGMIORI_OPTIMIZED = 40
+    SUGIMORI_OPTIMIZED = 40
     DERP_AFD = 50
     DERP_FLORK = 51
     #PIXEL_GEN3 = 60
@@ -24,6 +24,7 @@ class IconType(Enum):
     PMSF = 0
     UICONS = 1
     POKEMINERS = 2
+    ADDRESSABLE = 3
 
 
 ICON_DETAILS = {
@@ -51,7 +52,7 @@ ICON_DETAILS = {
         "url": "https://raw.githubusercontent.com/nileplumb/PkmnShuffleMap/master/PMSF_icons_large/",
         "type": IconType.PMSF
     },
-    IconSet.SUGMIORI_OPTIMIZED: {
+    IconSet.SUGIMORI_OPTIMIZED: {
         "url": "https://raw.githubusercontent.com/xxleevo/monicons/master/classic/",
         "type": IconType.PMSF
     },
@@ -89,10 +90,10 @@ class IconManager:
         for iconset in IconSet:
             print(f"IconManager: Preparing iconset {iconset.name}")
             self.iconsets[iconset] = IconSetManager(iconset)
-            #break # TODO remove after testing
+            break # TODO remove after testing
 
     def get_iconset(self, iconset: Union[str, int, IconSet] = IconSet.POGO):
-        iconset = match_enum(IconSet, iconset)
+        iconset = IconSet.match(iconset)
         return self.iconsets[iconset]
 
     def pokemon(self,
@@ -111,6 +112,8 @@ class IconManager:
                 if asset + ".png" in iconset.icons:
                     result.append((asset, iconset.url + "Images/Pokemon/{}.png".format(asset), bool(shiny)))
             return result
+        elif iconset.type == IconType.ADDRESSABLE:
+            pass
         elif iconset.type == IconType.PMSF:
             for monid in (mon.proto.id, 0):
                 for form in (mon.form.id, 0):
@@ -142,8 +145,8 @@ class IconManager:
         iconset = self.get_iconset(iconset)
         if iconset.type == IconType.POKEMINERS:
             return {
-                "name": montype.type.tmpl,
-                "url": iconset.url + "Images/Types/" + montype.type.tmpl + ".png"
+                "name": montype.proto.tmpl.lower(),
+                "url": iconset.url + "Images/Types/" + montype.proto.tmpl.lower() + ".png"
             }
     
     def weather(self, weather, iconset: Union[str, int, IconSet] = IconSet.POGO):

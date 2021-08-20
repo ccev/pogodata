@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import List, Union, Optional, Dict, Any, Tuple
 
 from enum import Enum
-from .misc import httpget, PROTO_URL, GAMEMASTER_URL, INFO_URL
+from .misc import httpget, PROTO_URL, GAMEMASTER_URL, INFO_URL, EnumMatcher
 from .pokemon import _make_mon_list, Pokemon
 from .type import _make_type_list, Type
 #from .event import _make_event_list, Event
@@ -87,7 +87,7 @@ class PogoData:
 
     # TODO all get_xxx methods
 
-    def get_enum(self, enum: str, message: Optional[str] = None, remove: Optional[str] = None) -> Enum:
+    def get_enum(self, enum: str, message: Optional[str] = None, remove: Optional[str] = None) -> EnumMatcher:
         cache_key = str(message).lower() + ":" + enum.lower()
         cached = self.__cached_enums.get(cache_key)
         if cached:
@@ -107,18 +107,17 @@ class PogoData:
             if len(proto) == 0:
                 return DefaultEnum(0)
 
-            proto = proto[0].replace("\t", "")
-
             final = {}
-            proto = proto.split("{\n")[1].split("\n}")[0]
-            for entry in proto.split("\n"):
-                k: str = entry.split(" =")[0]
-                v: int = int(entry.split("= ")[1].split(";")[0])
+            for entry in proto[0].split("\n"):
+                if "}" in entry or "{" in entry:
+                    continue
+                k: str = entry.split(" =")[0].strip()
+                v: int = int(entry.split("= ")[1].split(";")[0].strip())
                 if remove:
                     k = k.replace(remove, "")
                 final[k] = v
 
-            final = Enum(enum, final)
+            final = EnumMatcher(enum, final)
             self.__cached_enums[cache_key] = final
 
         return final

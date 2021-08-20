@@ -6,7 +6,7 @@ from .icons import IconManager, IconSet
 from .custom_types import CustomEnum, QueryType
 from .type import Type
 from .language import Language
-from .misc import match_enum
+
 
 
 class Weather(GameObject):
@@ -44,7 +44,7 @@ def _make_weather_list(pogodata):
     weather_enum = pogodata.get_enum("WeatherCondition")
     for _, entry in pogodata.get_gamemaster(r"^WEATHER_AFFINITY_.*", "weatherAffinities"):
         template = entry["weatherCondition"]
-        proto = match_enum(weather_enum, template)
+        proto = weather_enum.match(template)
 
         weather = Weather(pogodata.icon_manager, proto)
         weather.names = pogodata.language_manager.get_all("weather_" + proto.name)

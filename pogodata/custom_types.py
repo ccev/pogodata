@@ -61,7 +61,7 @@ class QueryType:
 
     @staticmethod
     def customenum(original: Union[str, int], to_match: CustomEnum):
-        return original == to_match.id or original == to_match.tmpl
+        return original == to_match.id or str(original) == to_match.tmpl
 
     @staticmethod
     def qint(original: Union[str, int], to_match: int):

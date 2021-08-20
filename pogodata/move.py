@@ -1,7 +1,6 @@
 from typing import Dict, Any, Union
 
 from .custom_types import DefaultEnum, CustomEnum, QueryType
-from .misc import match_enum
 from .icons import IconManager
 from .gameobject import GameObject
 from .language import Language
@@ -74,7 +73,7 @@ def _make_move_list(pogodata):
     for _, pve_entry in pogodata.get_gamemaster("^" + pattern_pve + ".*", "moveSettings"):
         template = pve_entry["movementId"]
         pvp_entry = pvp_moves.get(template, {})
-        move_proto = match_enum(move_enum, template)
+        move_proto = move_enum.match(template)
 
         move = Move(pogodata.icon_manager, pve_entry, pvp_entry, move_proto)
         move.type = pogodata.get_types(type=move.raw.get("type", move.raw.get("pokemonType", 0)))[0]

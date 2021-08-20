@@ -2,14 +2,28 @@ import requests
 import time
 from enum import Enum
 from datetime import datetime
-from typing import  Any
+from typing import Union, Any
 
 INFO_URL = "https://raw.githubusercontent.com/ccev/pogoinfo/v2/"
-PROTO_URL = "https://raw.githubusercontent.com/Furtif/POGOProtos/master/base/base.proto"
+PROTO_URL = "https://raw.githubusercontent.com/Furtif/POGOProtos/master/base/vbase.proto"
 GAMEMASTER_URL = "https://raw.githubusercontent.com/PokeMiners/game_masters/master/latest/latest.json"
 
 INGAME_ICONS = "https://api.github.com/repos/PokeMiners/pogo_assets/git/trees/{sha}?recursive=true"
 ICON_SHA = "https://api.github.com/repos/PokeMiners/pogo_assets/branches/master"
+
+
+class EnumMatcher(Enum):
+    @classmethod
+    def match(cls, value: Union[str, int]):
+        try:
+            type_ = cls[value.upper()]
+        except Exception as e:
+            try:
+                type_ = cls(value)
+            except Exception:
+                type_ = list(cls)[0]
+
+        return type_
 
 
 def httpget(url):
