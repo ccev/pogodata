@@ -79,9 +79,6 @@ class PokeMinersGenerator(IconGenerator):
 
         found = False
         name = ""
-        if pokemon.proto.id == 888:
-            print(forms)
-            print(costumes)
         for form in forms:
             if found:
                 break
