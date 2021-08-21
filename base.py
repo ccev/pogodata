@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 
 data = PogoData()
 app = Flask(__name__)
+app.config["JSON_SORT_KEYS"] = False
 
 
 def _str_to_num(kwargs: dict):
@@ -54,7 +55,7 @@ def main_route(endpoint):
 
     objs = details["get"](**args)
     objs = [o.get_full(language=args.get("language"), iconset=args.get("iconset")) for o in objs]
-    return jsonify(objs)
+    return jsonify(objs, )
 
 
 app.run(port=4442)

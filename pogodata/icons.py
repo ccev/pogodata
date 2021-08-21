@@ -1,8 +1,12 @@
+from __future__ import annotations
 import re
 from enum import Enum
-from typing import Tuple, Dict, Union, List
+from typing import Tuple, Dict, Union, List, TYPE_CHECKING, Optional
 
 from .misc import get_repo_content, EnumMatcher
+
+if TYPE_CHECKING:
+    from .pokemon import Pokemon
 
 
 class IconSet(EnumMatcher):
@@ -24,6 +28,104 @@ class IconType(Enum):
     PMSF = 0
     UICONS = 1
     POKEMINERS = 2
+
+
+class Icon:
+    name: str
+    url: str
+
+    def __init__(self, url, name):
+        self.name = name
+        self.url = url
+
+
+class PokemonIcon(Icon):
+    female: bool
+    shiny: bool
+
+    def __init__(self, url: str, name: str, female: bool, shiny: bool):
+        super().__init__(url, name)
+        self.female = female
+        self.shiny = shiny
+
+
+class IconGenerator:
+    @staticmethod
+    def pokemon(iconset: IconSetManager, pokemon: Pokemon):
+        pass
+
+
+class PokeMinersGenerator(IconGenerator):
+    @staticmethod
+    def pokemon(iconset: IconSetManager, pokemon: Pokemon):
+        forms = []
+        costumes = []
+
+        if pokemon.pokemon_type.value == 3:
+            forms.append(".f" + pokemon.temp_evolution.tmpl.replace("TEMP_EVOLUTION_", ""))
+        else:
+            form = pokemon.form.tmpl.replace(pokemon.proto.tmpl, "").strip("_")
+            if form not in ["NORMAL", "SHADOW", "PURIFIED", ""]:
+                forms.append(".f" + form)
+        forms.append("")
+
+        costume = pokemon.costume.tmpl
+        if pokemon.costume.id > 0 and costume:
+            costumes.append(".c" + costume)
+        costumes.append("")
+
+        name_template = "pm" + str(pokemon.proto.id) + "{}.icon"
+        url_template = iconset.url + "Images/Pokemon/Addressable%20Assets/{}.png"
+
+        found = False
+        name = ""
+        if pokemon.proto.id == 888:
+            print(forms)
+            print(costumes)
+        for form in forms:
+            if found:
+                break
+            for costume in costumes:
+                name = name_template.format(form + costume)
+                if name + ".png" in iconset.icons:
+                    found = True
+                    break
+
+        if found:
+            icon = PokemonIcon(url_template.format(name), name, False, False)
+            icons = [icon]
+            gender_name = name.replace(".icon", ".g2.icon")
+            if gender_name + ".png" in iconset.icons:
+                gender_icon = PokemonIcon(url_template.format(gender_name), gender_name, True, False)
+                icons.append(gender_icon)
+
+            for icon in icons.copy():
+                shiny_name = icon.name.replace(".icon", ".s.icon")
+                if shiny_name + ".png" in iconset.icons:
+                    shiny_icon = PokemonIcon(url_template.format(shiny_name), shiny_name, icon.female, True)
+                    icons.append(shiny_icon)
+
+        else:
+            icons = []
+            asset = "pokemon_icon_"
+            for shiny in ["", "_shiny"]:
+                for gender in [0, 1]:
+                    if pokemon._asset_suffix:
+                        asset += pokemon._asset_suffix
+                    else:
+                        asset += str(pokemon.proto.id).zfill(3) + "_"
+                        if pokemon._asset_value:
+                            asset += str(pokemon._asset_value)
+                        else:
+                            asset += "0" + str(gender)
+                            if pokemon.costume:
+                                asset += "_" + str(pokemon.costume.id).zfill(2)
+                    asset += shiny
+                    if asset + ".png" in iconset.icons:
+                        icon = PokemonIcon(iconset.url + "Images/Pokemon/" + asset + ".png", asset, bool(gender), bool(shiny))
+                        icons.append(icon)
+
+        return [vars(i) for i in icons]
 
 
 ICON_DETAILS = {
@@ -73,7 +175,7 @@ class IconSetManager:
         self.url = self.details["url"]
         self.type = self.details["type"]
 
-        match = re.match(r"https:\/\/raw\.githubusercontent\.com\/([^\/]*)\/([^\/]*)\/([^\/]*).*", self.url)
+        match = re.match(r"https://raw\.githubusercontent\.com/([^/]*)/([^/]*)/([^/]*).*", self.url)
         user, repo, branch = match.groups()
 
         base_api = f"https://api.github.com/repos/{user}/{repo}/"
@@ -98,7 +200,7 @@ class IconManager:
     def pokemon(self,
                 mon,
                 gender: int = 0,
-                iconset: Union[str, int, IconSet] = IconSet.POGO) -> List[Tuple[str, str, bool]]:
+                iconset: Union[str, int, IconSet] = IconSet.POGO):
         """
         Returns a list containg tuples: (icon name, icon url, is_shiny?)
         """
@@ -106,11 +208,7 @@ class IconManager:
         result = []
 
         if iconset.type == IconType.POKEMINERS:
-            for shiny in ["", "_shiny"]:
-                asset = mon.assets[gender] + shiny
-                if asset + ".png" in iconset.icons:
-                    result.append((asset, iconset.url + "Images/Pokemon/{}.png".format(asset), bool(shiny)))
-            return result
+            return PokeMinersGenerator.pokemon(iconset, mon)
         elif iconset.type == IconType.PMSF:
             for monid in (mon.proto.id, 0):
                 for form in (mon.form.id, 0):

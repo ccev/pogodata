@@ -8,25 +8,25 @@ from .type import Type
 
 
 class Move(GameObject):
-    def __init__(self, icon_manager: IconManager, pve_entry, pvp_entry, proto):
+    def __init__(self, icon_manager: IconManager, pve_entry: dict, pvp_entry: dict, proto):
         super().__init__(icon_manager, {**pve_entry, **pvp_entry})
 
         self.proto = CustomEnum(proto)
         self.names: Dict[str, str] = {}
         self.type: Type = Type(self.icon_manager, DefaultEnum(0))
 
-        self.pve = { # TODO move stuff
-            "power": 0,
-            "energy_gain": 0,
-            "duration": 0,
+        self.pve = {
+            "power": pve_entry.get("power", 0.0),
+            "energy_delta": pve_entry.get("energyDelta", 0),
+            "duration": pve_entry.get("durationMs", 0),
             "window": {
-                "start": 0.0,
-                "end": 0.0
+                "start": pve_entry.get("damageWindowStartMs", 0),
+                "end": pve_entry.get("damageWindowEndMs", 0)
             }
         }
         self.pvp = {
-            "power": 0,
-            "energy_gain": 0
+            "power": pvp_entry.get("power", 0.0),
+            "energy_delta": pvp_entry.get("energyDelta", 0)
         }
 
         self.query = {
@@ -34,12 +34,12 @@ class Move(GameObject):
             "name": (QueryType.qlist, self.names),
             "type": (QueryType.customenum, self.type.proto),
             "pve_power": (QueryType.qint, self.pve["power"]),
-            "pve_energy_gain": (QueryType.qint, self.pve["energy_gain"]),
+            "pve_energy_delta": (QueryType.qint, self.pve["energy_delta"]),
             "pve_duration": (QueryType.qint, self.pve["duration"]),
-            "pve_window_start": (QueryType.qfloat, self.pve["window"]["start"]),
-            "pve_window_end": (QueryType.qfloat, self.pve["window"]["end"]),
+            "pve_window_start": (QueryType.qint, self.pve["window"]["start"]),
+            "pve_window_end": (QueryType.qint, self.pve["window"]["end"]),
             "pvp_power": (QueryType.qint, self.pvp["power"]),
-            "pvp_energy_gain": (QueryType.qint, self.pvp["energy_gain"])
+            "pvp_energy_delta": (QueryType.qint, self.pvp["energy_delta"])
         }
 
     def get_base(self) -> Dict[str, Any]:

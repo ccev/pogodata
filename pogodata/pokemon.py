@@ -95,19 +95,7 @@ class Pokemon(GameObject):
                  language: Union[str, Language] = Language.ENGLISH,
                  iconset: Union[str, int, IconSet] = IconSet.POGO) -> Dict[str, Any]:
 
-        assets = []
-        for gender, _ in enumerate(self.assets):
-            wanted_assets = self.icon_manager.pokemon(self, gender, iconset)
-            for icon_name, icon_url, is_shiny in wanted_assets:
-                assets.append({
-                    "name": icon_name,
-                    "url": icon_url,
-                    "shiny": is_shiny,
-                    "female": bool(gender)
-                })
-
         base = self.get_base()
-
         base.update({
             "name": self.get_name(language),
             "form_name": self.get_name(language, var=self.form_names),
@@ -117,7 +105,7 @@ class Pokemon(GameObject):
             "evolutions": [evo.get_base() for evo in self.evolutions],
             "temp_evolutions": [evo.get_base() for evo in self.temp_evolutions],
             "base_stats": self.base_stats,
-            "assets": assets,
+            "assets": self.icon_manager.pokemon(self, iconset),
             "info": self.info
         })
         return base
@@ -127,7 +115,7 @@ class Pokemon(GameObject):
         if part.id > 0:
             return ":" + str(part.id)
         else:
-            return "0"
+            return ":0"
 
     def make_gen(self):
         gen: Generation = Generation.UNSET
@@ -140,10 +128,7 @@ class Pokemon(GameObject):
         self.generation = CustomEnum(gen)
 
     def make_internal_id(self):
-        if self.proto.id == 0:
-            self.id = "0"
-        else:
-            self.id = str(self.proto.id) + self.__id_part(self.form) + self.__id_part(self.costume) \
+        self.id = str(self.proto.id) + self.__id_part(self.form) + self.__id_part(self.costume) \
                       + self.__id_part(self.temp_evolution)
 
     def calculate_cp(self, level, ivs):
